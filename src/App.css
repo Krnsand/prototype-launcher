@@ -123,7 +123,7 @@
 }
 
 .prototype-card {
-  padding: 25px;
+  padding: 15px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: #ffffff;
@@ -164,56 +164,47 @@
 .prototype-card:disabled {
   background: rgba(255, 255, 255, 0.55);
   border-color: rgba(255, 255, 255, 0.18);
-  color: rgba(53, 26, 132, 0.45);
   cursor: not-allowed;
 }
 
-.prototype-card:disabled:hover,
+/* .prototype-card:disabled:hover,
 .prototype-card:disabled:active {
   background: rgba(255, 255, 255, 0.55);
   color: rgba(53, 26, 132, 0.45);
-}
+} */
 
 .prototype-card:active {
   background: #351a84;
   color: #ffffff;
 }
 
-.prototype-card--active .prototype-card__icon {
+/* .prototype-card--active .prototype-card__icon {
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
-}
+} */
 
-.prototype-card:hover .prototype-card__icon {
+/* .prototype-card:hover .prototype-card__icon {
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
-}
+} */
 
-.prototype-card:disabled .prototype-card__icon {
-  background: rgba(53, 26, 132, 0.06);
-  color: rgba(53, 26, 132, 0.35);
-}
 
-.prototype-card:disabled:hover .prototype-card__icon,
+/* .prototype-card:disabled:hover .prototype-card__icon,
 .prototype-card:disabled:active .prototype-card__icon {
   background: rgba(53, 26, 132, 0.06);
   color: rgba(53, 26, 132, 0.35);
-}
+} */
 
-.prototype-card:active .prototype-card__icon {
+/* .prototype-card:active .prototype-card__icon {
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
-}
+} */
 
-.prototype-card__icon {
-  flex: 0 0 auto;
+.prototype-card__icon img {
   width: 60px;
   height: 60px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  background: rgba(53, 26, 132, 0.08);
-  color: #351a84;
+  object-fit: contain;
+  display: block;
 }
 
 .prototype-card__text {

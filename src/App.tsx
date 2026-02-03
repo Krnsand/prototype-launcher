@@ -4,50 +4,12 @@ import accessCityTitle from './assets/accesscity.png'
 import sueAvatar from './assets/sue.webp'
 import greetingMp3 from './assets/hej.mp3'
 import instructionMp3 from './assets/instruktion.mp3'
+import conceptIcon from './assets/concept.png'
+import sensorMapIcon from './assets/sensor_map.png'
+import scandinaviumMapIcon from './assets/scandinavium_map.png'
+import sensoryAlertsIcon from './assets/sensory_alerts.png'
 
-type PrototypeIcon = 'movie' | 'sonar' | 'map' | 'alert'
-
-function PrototypeIconSvg(props: { name: PrototypeIcon }) {
-  switch (props.name) {
-    case 'movie':
-      return (
-        <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm0 2v8h16V8H4Zm2-3 1.2-2h2.2L8.2 5H6Zm5 0 1.2-2h2.2L13.2 5H11Zm5 0 1.2-2h2.2L18.2 5H16Z"
-          />
-        </svg>
-      )
-    case 'sonar':
-      return (
-        <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 12.75a.75.75 0 0 1-.75-.75V3h1.5v9a.75.75 0 0 1-.75.75Zm0 8.75A9.5 9.5 0 0 1 2.5 12h1.5a8 8 0 1 0 16 0h1.5A9.5 9.5 0 0 1 12 21.5Zm0-4.5A5 5 0 0 1 7 12h1.5a3.5 3.5 0 1 0 7 0H17a5 5 0 0 1-5 5Z"
-          />
-          <path fill="currentColor" d="M12 13.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
-        </svg>
-      )
-    case 'map':
-      return (
-        <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M15 5.5 9 3 3.5 5.2a1 1 0 0 0-.6.9v14.6a1 1 0 0 0 1.4.9L9 19l6 2.5 5.5-2.2a1 1 0 0 0 .6-.9V3.8a1 1 0 0 0-1.4-.9L15 5.5ZM10 4.6l4 1.7v13.1l-4-1.7V4.6Zm-1.5.2v13.1l-4 1.7V6.5l4-1.7Zm7 1.5 4-1.7v13.1l-4 1.7V6.3Z"
-          />
-        </svg>
-      )
-    case 'alert':
-      return (
-        <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 1 0-14 0v5l-2 2v1h18v-1l-2-2Zm-2 .5H7V11a5 5 0 1 1 10 0v5.5Z"
-          />
-        </svg>
-      )
-  }
-}
+type PrototypeIcon = string
 
 function App() {
   const [buttonHidden, setButtonHidden] = createSignal(false)
@@ -68,20 +30,25 @@ function App() {
   const prototypes: Array<{
     title: string
     description: string
-    icon: PrototypeIcon
+    icon: string
     href?: string
     disabled?: boolean
   }> = [
-    { title: 'Konceptet', description: 'En kort video om konceptet', icon: 'movie', href: 'https://proxy.kokokaka.com/accesscity.mp4' },
     {
-      title: 'Sensorkartläggning',
-      description: 'Navigera i arenan med lätthet',
-      icon: 'sonar',
+      title: 'Om',
+      description: 'En kort video om konceptet',
+      icon: conceptIcon,
+      href: 'https://proxy.kokokaka.com/accesscity.mp4',
+    },
+    {
+      title: 'Prova',
+      description: 'Utvärdera prototypen för vidare utvecklingsförbättringar',
+      icon: sensorMapIcon,
       href:
         'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=28-338&t=TE0wDr5AlTbZJx33-1&scaling=contain&content-scaling=fixed&page-id=26%3A4058&starting-point-node-id=28%3A338&hide-ui=1',
     },
-    { title: 'Arenakarta', description: 'Hitta rätt i arenan', icon: 'map', disabled: true },
-    { title: 'Aviseringar', description: 'Få aviseringar och notiser', icon: 'alert', disabled: true },
+    { title: 'Arenakarta', description: 'Hitta rätt i arenan', icon: scandinaviumMapIcon, disabled: true },
+    { title: 'Aviseringar', description: 'Få aviseringar och notiser', icon: sensoryAlertsIcon, disabled: true },
   ]
 
   let postStartTimeoutId: number | undefined
@@ -183,7 +150,7 @@ function App() {
               }}
             >
               <div class="prototype-card__icon" aria-hidden="true">
-                <PrototypeIconSvg name={prototype.icon} />
+                <img src={prototype.icon} alt="" />
               </div>
               <div class="prototype-card__text">
                 <div class="prototype-card__title">{prototype.title}</div>
