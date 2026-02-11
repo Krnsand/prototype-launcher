@@ -1,5 +1,5 @@
 import './App.css'
-import { createSignal, onCleanup } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import accessCityTitle from './assets/accesscity.png'
 import sueAvatar from './assets/sue.webp'
 import greetingMp3 from './assets/hej.mp3'
@@ -9,7 +9,7 @@ import sensorMapIcon from './assets/sensor_map.png'
 import scandinaviumMapIcon from './assets/scandinavium_map.png'
 import sensoryAlertsIcon from './assets/sensory_alerts.png'
 
-type PrototypeIcon = string
+// type PrototypeIcon = string
 
 function App() {
   const [buttonHidden, setButtonHidden] = createSignal(false)
@@ -18,6 +18,11 @@ function App() {
   const [titleRaised, setTitleRaised] = createSignal(false)
   const [startLocked, setStartLocked] = createSignal(false)
   const [selectedPrototypeIndex, setSelectedPrototypeIndex] = createSignal<number | null>(null)
+
+  const [titleShiftPx, setTitleShiftPx] = createSignal(0)
+
+  let titleEl: HTMLImageElement | undefined
+  let bubbleEl: HTMLDivElement | undefined
 
   const bubbleDelayMs = 1500
 
@@ -42,7 +47,7 @@ function App() {
     },
     {
       title: 'Prova',
-      description: 'Utvärdera prototypen för vidare utvecklingsförbättringar',
+      description: 'Utvärdera prototypen för vidare förbättringar',
       icon: sensorMapIcon,
       href:
         'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=28-338&t=TE0wDr5AlTbZJx33-1&scaling=contain&content-scaling=fixed&page-id=26%3A4058&starting-point-node-id=28%3A338&hide-ui=1',
@@ -61,6 +66,47 @@ function App() {
     instructionAudio.currentTime = 0
   }
 
+  const updateTitleShift = () => {
+    if (!titleEl || !bubbleEl) {
+      setTitleShiftPx(0)
+      return
+    }
+
+    if (!avatarVisible()) {
+      setTitleShiftPx(0)
+      return
+    }
+
+    const titleRect = titleEl.getBoundingClientRect()
+    const bubbleRect = bubbleEl.getBoundingClientRect()
+
+    const desiredGap = 8
+    const overlap = titleRect.bottom + desiredGap - bubbleRect.top
+    setTitleShiftPx(overlap > 0 ? Math.ceil(overlap) : 0)
+  }
+
+  onMount(() => {
+    const onResize = () => {
+      requestAnimationFrame(updateTitleShift)
+    }
+
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+    onResize()
+
+    onCleanup(() => {
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+    })
+  })
+
+  createEffect(() => {
+    avatarVisible()
+    titleRaised()
+    showPrototypes()
+    requestAnimationFrame(updateTitleShift)
+  })
+
   const playAudio = (audio: HTMLAudioElement) => {
     stopAudio()
     audio.currentTime = 0
@@ -70,6 +116,7 @@ function App() {
 
   const warmUpAudio = (src: string) => {
     const warmUp = new Audio(src)
+    warmUp.muted = true
     warmUp.volume = 0
     void warmUp.play()
       .then(() => {
@@ -86,7 +133,7 @@ function App() {
     setButtonHidden(true)
     setAvatarVisible(true)
 
-    warmUpAudio(greetingMp3)
+    stopAudio()
     warmUpAudio(instructionMp3)
     playAudio(greetingAudio)
 
@@ -108,7 +155,11 @@ function App() {
   })
 
   return (
-    <main class="landing" aria-label="AccessCity landing page">
+    <main
+      class="landing"
+      classList={{ 'landing--avatar-shown': avatarVisible() }}
+      aria-label="AccessCity landing page"
+    >
       <div class="landing__overlay" classList={{ 'landing__overlay--stage2': showPrototypes() }} />
       <div class="landing__content">
         <img
@@ -116,6 +167,10 @@ function App() {
           classList={{ 'landing__title--raised': titleRaised() }}
           src={accessCityTitle}
           alt="AccessCity"
+          ref={(el) => {
+            titleEl = el
+          }}
+          style={{ '--title-shift': `${titleShiftPx()}px` }}
         />
         <button
           class="landing__cta"
@@ -167,7 +222,12 @@ function App() {
         style={{ '--bubble-delay': `${bubbleDelayMs}ms` }}
         aria-live="polite"
       >
-        <div class="avatar__bubble">
+        <div
+          class="avatar__bubble"
+          ref={(el) => {
+            bubbleEl = el
+          }}
+        >
           <div class="avatar__bubble-text">Hej och välkommen till AccessCity Göteborg!</div>
         </div>
         <img class="avatar__image" src={sueAvatar} alt="Sue" />
