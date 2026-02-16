@@ -19,15 +19,23 @@ function App() {
   const [startLocked, setStartLocked] = createSignal(false)
   const [selectedPrototypeIndex, setSelectedPrototypeIndex] = createSignal<number | null>(null)
 
+  const [page, setPage] = createSignal<'landing' | 'menu' | 'video' | 'figma'>('landing')
+
   const [lang, setLang] = createSignal<'sv' | 'en'>('sv')
 
   const STORAGE_STAGE_KEY = 'accesscity:stage'
   const STORAGE_LANG_KEY = 'accesscity:lang'
 
+  const VIDEO_URL = 'https://proxy.kokokaka.com/accesscity.mp4'
+  const FIGMA_PROTO_URL =
+    'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=28-338&t=TE0wDr5AlTbZJx33-1&scaling=contain&content-scaling=fixed&page-id=26%3A4058&starting-point-node-id=28%3A338&hide-ui=1'
+  const FIGMA_EMBED_URL = `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(FIGMA_PROTO_URL)}`
+
   const [titleShiftPx, setTitleShiftPx] = createSignal(0)
 
   let titleEl: HTMLImageElement | undefined
   let bubbleEl: HTMLDivElement | undefined
+  let videoEl: HTMLVideoElement | undefined
   let titleBumperObserver: ResizeObserver | undefined
 
   const bubbleDelayMs = 1500
@@ -51,20 +59,22 @@ function App() {
     description: string
     icon: string
     href?: string
+    type?: 'video' | 'figma'
     disabled?: boolean
   }> => [
     {
       title: t('Om', 'About'),
       description: t('En kort video om konceptet', 'A short video about the concept'),
       icon: conceptIcon,
-      href: 'https://proxy.kokokaka.com/accesscity.mp4',
+      href: VIDEO_URL,
+      type: 'video',
     },
     {
       title: t('Prova', 'Try'),
       description: t('Utvärdera prototypen för vidare förbättringar', 'Evaluate the prototype for further improvements'),
       icon: sensorMapIcon,
-      href:
-        'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=28-338&t=TE0wDr5AlTbZJx33-1&scaling=contain&content-scaling=fixed&page-id=26%3A4058&starting-point-node-id=28%3A338&hide-ui=1',
+      href: FIGMA_EMBED_URL,
+      type: 'figma',
     },
     {
       title: t('Arenakarta', 'Arena map'),
@@ -99,6 +109,33 @@ function App() {
     setTitleShiftPx(0)
   }
 
+  const syncPageFromLocation = () => {
+    if (window.location.hash === '#video') {
+      setPage('video')
+      setButtonHidden(true)
+      setAvatarVisible(false)
+      setTitleRaised(true)
+      setShowPrototypes(true)
+      return
+    }
+
+    if (window.location.hash === '#figma') {
+      setPage('figma')
+      setButtonHidden(true)
+      setAvatarVisible(false)
+      setTitleRaised(true)
+      setShowPrototypes(true)
+      return
+    }
+
+    if (showPrototypes()) {
+      setPage('menu')
+      return
+    }
+
+    setPage('landing')
+  }
+
   onMount(() => {
     try {
       const storedLang = sessionStorage.getItem(STORAGE_LANG_KEY)
@@ -114,6 +151,14 @@ function App() {
     } catch {
     }
 
+    syncPageFromLocation()
+
+    const onPopState = () => {
+      syncPageFromLocation()
+    }
+
+    window.addEventListener('popstate', onPopState)
+
     const onResize = () => {
       requestAnimationFrame(updateTitleShift)
     }
@@ -123,8 +168,10 @@ function App() {
     onResize()
 
     onCleanup(() => {
+      window.removeEventListener('popstate', onPopState)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
+      if (titleBumperObserver) titleBumperObserver.disconnect()
     })
   })
 
@@ -133,6 +180,21 @@ function App() {
     titleRaised()
     showPrototypes()
     requestAnimationFrame(updateTitleShift)
+  })
+
+  createEffect(() => {
+    if (page() !== 'video') return
+    if (!videoEl) return
+
+    try {
+      videoEl.currentTime = 0
+    } catch {
+    }
+
+    const p = videoEl.play()
+    if (p && typeof (p as Promise<void>).catch === 'function') {
+      ;(p as Promise<void>).catch(() => {})
+    }
   })
 
   createEffect(() => {
@@ -213,6 +275,47 @@ function App() {
     setAvatarVisible(false)
     setButtonHidden(false)
     setStartLocked(false)
+    setPage('landing')
+    if (window.location.hash) {
+      window.history.pushState({}, '', window.location.pathname + window.location.search)
+    }
+  }
+
+  const handleOpenVideo = () => {
+    try {
+      sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
+      sessionStorage.setItem(STORAGE_LANG_KEY, lang())
+    } catch {
+    }
+
+    setButtonHidden(true)
+    setAvatarVisible(false)
+    setTitleRaised(true)
+    setShowPrototypes(true)
+    setPage('video')
+    window.history.pushState({ page: 'video' }, '', '#video')
+  }
+
+  const handleOpenFigma = () => {
+    try {
+      sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
+      sessionStorage.setItem(STORAGE_LANG_KEY, lang())
+    } catch {
+    }
+
+    setButtonHidden(true)
+    setAvatarVisible(false)
+    setTitleRaised(true)
+    setShowPrototypes(true)
+    setPage('figma')
+    window.history.pushState({ page: 'figma' }, '', '#figma')
+  }
+
+  const handleBackToMenu = () => {
+    setPage('menu')
+    if (window.location.hash === '#video' || window.location.hash === '#figma') {
+      window.history.back()
+    }
   }
 
   onCleanup(() => {
@@ -229,96 +332,149 @@ function App() {
     >
       <div class="landing__overlay" classList={{ 'landing__overlay--stage2': showPrototypes() }} />
       <div class="landing__content">
-        <img
-          class="landing__title"
-          classList={{ 'landing__title--raised': titleRaised(), 'landing__title--cards': showPrototypes() }}
-          src={accessCityTitle}
-          alt="AccessCity"
-          ref={(el) => {
-            titleEl = el
-          }}
-          style={{ '--title-shift': `${titleShiftPx()}px` }}
-        />
-        <button
-          class="landing__cta"
-          classList={{ 'landing__cta--hidden': buttonHidden(), 'landing__cta--gone': showPrototypes() }}
-          type="button"
-          onClick={handleStart}
-          disabled={startLocked()}
-        >
-          {t('Starta', 'Start')}
-        </button>
-
-        <div
-          class="landing__lang"
-          classList={{ 'landing__lang--hidden': buttonHidden() || showPrototypes() }}
-          aria-label="Language"
-          style={{ display: showPrototypes() ? 'none' : 'flex' }}
-        >
-          <button
-            type="button"
-            class="landing__lang-option"
-            classList={{ 'landing__lang-option--active': lang() === 'sv' }}
-            onClick={() => setLang('sv')}
-          >
-            Svenska
-          </button>
-          <button
-            type="button"
-            class="landing__lang-option"
-            classList={{ 'landing__lang-option--active': lang() === 'en' }}
-            onClick={() => setLang('en')}
-          >
-            English
-          </button>
-        </div>
-
-        <button
-          class="landing__back"
-          classList={{ 'landing__back--shown': showPrototypes() }}
-          type="button"
-          onClick={handleBackToLanding}
-        >
-          {t('Tillbaka', 'Back')}
-        </button>
-
-        <div
-          class="prototype-cards"
-          classList={{ 'prototype-cards--shown': showPrototypes() }}
-          aria-label="Prototype list"
-        >
-        {prototypes().slice(0, 2).map((prototype, i) => (
-          <button
-            class="prototype-card"
-            classList={{ 'prototype-card--active': selectedPrototypeIndex() === i }}
-            style={{ '--i': i, '--delay': `${i * 400}ms` }}
-            type="button"
-            disabled={prototype.disabled}
-            onClick={() => {
-              if (prototype.disabled) return
-              setSelectedPrototypeIndex(i)
-              if (prototype.href) {
-                try {
-                  sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
-                  sessionStorage.setItem(STORAGE_LANG_KEY, lang())
-                } catch {
-                }
-                window.setTimeout(() => {
-                  window.location.assign(prototype.href!)
-                }, 80)
+        <Show
+          when={page() !== 'video' && page() !== 'figma'}
+          fallback={
+            <Show
+              when={page() === 'video'}
+              fallback={
+                <div class="figma-page" aria-label="Prototype">
+                  <iframe
+                    class="figma-page__frame"
+                    src={FIGMA_EMBED_URL}
+                    allowfullscreen
+                    loading="eager"
+                    referrerpolicy="no-referrer"
+                    title="Prototype"
+                  />
+                  <button class="video-page__close" type="button" onClick={handleBackToMenu} aria-label="Close">
+                    <span class="video-page__close-icon">×</span>
+                  </button>
+                </div>
               }
+            >
+              <div class="video-page" aria-label="Concept video">
+                <video
+                  class="video-page__video"
+                  src={VIDEO_URL}
+                  ref={(el) => {
+                    videoEl = el
+                  }}
+                  autoplay
+                  muted
+                  controls
+                  playsinline
+                  preload="auto"
+                />
+                <button class="video-page__close" type="button" onClick={handleBackToMenu} aria-label="Close">
+                  <span class="video-page__close-icon">×</span>
+                </button>
+              </div>
+            </Show>
+          }
+        >
+          <img
+            class="landing__title"
+            classList={{ 'landing__title--raised': titleRaised(), 'landing__title--cards': showPrototypes() }}
+            src={accessCityTitle}
+            alt="AccessCity"
+            ref={(el) => {
+              titleEl = el
             }}
+            style={{ '--title-shift': `${titleShiftPx()}px` }}
+          />
+          <button
+            class="landing__cta"
+            classList={{ 'landing__cta--hidden': buttonHidden(), 'landing__cta--gone': showPrototypes() }}
+            type="button"
+            onClick={handleStart}
+            disabled={startLocked()}
           >
-            <div class="prototype-card__icon" aria-hidden="true">
-              <img src={prototype.icon} alt="" />
-            </div>
-            <div class="prototype-card__text">
-              <div class="prototype-card__title">{prototype.title}</div>
-              <div class="prototype-card__description">{prototype.description}</div>
-            </div>
+            {t('Starta', 'Start')}
           </button>
-        ))}
-        </div>
+
+          <div
+            class="landing__lang"
+            classList={{ 'landing__lang--hidden': buttonHidden() || showPrototypes() }}
+            aria-label="Language"
+            style={{ display: showPrototypes() ? 'none' : 'flex' }}
+          >
+            <button
+              type="button"
+              class="landing__lang-option"
+              classList={{ 'landing__lang-option--active': lang() === 'sv' }}
+              onClick={() => setLang('sv')}
+            >
+              Svenska
+            </button>
+            <button
+              type="button"
+              class="landing__lang-option"
+              classList={{ 'landing__lang-option--active': lang() === 'en' }}
+              onClick={() => setLang('en')}
+            >
+              English
+            </button>
+          </div>
+
+          <button
+            class="landing__back"
+            classList={{ 'landing__back--shown': showPrototypes() }}
+            type="button"
+            onClick={handleBackToLanding}
+          >
+            {t('Tillbaka', 'Back')}
+          </button>
+
+          <div
+            class="prototype-cards"
+            classList={{ 'prototype-cards--shown': showPrototypes() }}
+            aria-label="Prototype list"
+          >
+            {prototypes().slice(0, 2).map((prototype, i) => (
+              <button
+                class="prototype-card"
+                classList={{ 'prototype-card--active': selectedPrototypeIndex() === i }}
+                style={{ '--i': i, '--delay': `${i * 400}ms` }}
+                type="button"
+                disabled={prototype.disabled}
+                onClick={() => {
+                  if (prototype.disabled) return
+                  setSelectedPrototypeIndex(i)
+
+                  if (prototype.type === 'video') {
+                    handleOpenVideo()
+                    return
+                  }
+
+                  if (prototype.type === 'figma') {
+                    handleOpenFigma()
+                    return
+                  }
+
+                  if (prototype.href) {
+                    try {
+                      sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
+                      sessionStorage.setItem(STORAGE_LANG_KEY, lang())
+                    } catch {
+                    }
+                    window.setTimeout(() => {
+                      window.location.assign(prototype.href!)
+                    }, 80)
+                  }
+                }}
+              >
+                <div class="prototype-card__icon" aria-hidden="true">
+                  <img src={prototype.icon} alt="" />
+                </div>
+                <div class="prototype-card__text">
+                  <div class="prototype-card__title">{prototype.title}</div>
+                  <div class="prototype-card__description">{prototype.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Show>
       </div>
 
       <div
