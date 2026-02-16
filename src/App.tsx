@@ -19,12 +19,16 @@ function App() {
   const [startLocked, setStartLocked] = createSignal(false)
   const [selectedPrototypeIndex, setSelectedPrototypeIndex] = createSignal<number | null>(null)
 
-  const [page, setPage] = createSignal<'landing' | 'menu' | 'video' | 'figma'>('landing')
+  const [page, setPage] = createSignal<'landing' | 'menu' | 'figma'>('landing')
 
-  const [lang, setLang] = createSignal<'sv' | 'en'>('sv')
+  const [figmaLoading, setFigmaLoading] = createSignal(false)
+  const [figmaLoadingToken, setFigmaLoadingToken] = createSignal(0)
+
+  const [videoOverlayOpen, setVideoOverlayOpen] = createSignal(false)
+
+  const [videoMuted, setVideoMuted] = createSignal(true)
 
   const STORAGE_STAGE_KEY = 'accesscity:stage'
-  const STORAGE_LANG_KEY = 'accesscity:lang'
 
   const VIDEO_URL = 'https://proxy.kokokaka.com/accesscity.mp4'
   const FIGMA_PROTO_URL =
@@ -43,16 +47,14 @@ function App() {
   const greetingAudio = new Audio(greetingMp3)
   greetingAudio.preload = 'auto'
     // ta bort under för att kicka igång ljud igen
-  greetingAudio.muted = true
-  greetingAudio.volume = 0
+  // greetingAudio.muted = true
+  // greetingAudio.volume = 0
 
   const instructionAudio = new Audio(instructionMp3)
   instructionAudio.preload = 'auto'
     // ta bort under för att kicka igång ljud igen
-  instructionAudio.muted = true
-  instructionAudio.volume = 0
-
-  const t = (sv: string, en: string) => (lang() === 'sv' ? sv : en)
+  // instructionAudio.muted = true
+  // instructionAudio.volume = 0
 
   const prototypes = (): Array<{
     title: string
@@ -63,28 +65,35 @@ function App() {
     disabled?: boolean
   }> => [
     {
-      title: t('Om', 'About'),
-      description: t('En kort video om konceptet', 'A short video about the concept'),
+      title: 'Om',
+      description: 'En kort video om konceptet',
       icon: conceptIcon,
       href: VIDEO_URL,
       type: 'video',
     },
     {
-      title: t('Prova', 'Try'),
-      description: t('Utvärdera prototypen för vidare förbättringar', 'Evaluate the prototype for further improvements'),
+      title: 'Prova',
+      description: 'Utvärdera prototypen för vidare förbättringar',
       icon: sensorMapIcon,
       href: FIGMA_EMBED_URL,
       type: 'figma',
     },
     {
-      title: t('Arenakarta', 'Arena map'),
-      description: t('Hitta rätt i arenan', 'Find your way in the arena'),
+      title: 'Try it',
+      description: 'Evaluate the prototype for further improvements',
+      icon: sensorMapIcon,
+      href: FIGMA_EMBED_URL,
+      type: 'figma',
+    },
+    {
+      title: 'Arenakarta',
+      description: 'Hitta rätt i arenan',
       icon: scandinaviumMapIcon,
       disabled: true,
     },
     {
-      title: t('Aviseringar', 'Alerts'),
-      description: t('Få aviseringar och notiser', 'Receive alerts and notifications'),
+      title: 'Aviseringar',
+      description: 'Få aviseringar och notiser',
       icon: sensoryAlertsIcon,
       disabled: true,
     },
@@ -110,17 +119,10 @@ function App() {
   }
 
   const syncPageFromLocation = () => {
-    if (window.location.hash === '#video') {
-      setPage('video')
-      setButtonHidden(true)
-      setAvatarVisible(false)
-      setTitleRaised(true)
-      setShowPrototypes(true)
-      return
-    }
-
     if (window.location.hash === '#figma') {
       setPage('figma')
+      setFigmaLoading(true)
+      setFigmaLoadingToken(Date.now())
       setButtonHidden(true)
       setAvatarVisible(false)
       setTitleRaised(true)
@@ -138,15 +140,12 @@ function App() {
 
   onMount(() => {
     try {
-      const storedLang = sessionStorage.getItem(STORAGE_LANG_KEY)
-      if (storedLang === 'sv' || storedLang === 'en') setLang(storedLang)
-
       const storedStage = sessionStorage.getItem(STORAGE_STAGE_KEY)
       if (storedStage === 'menu') {
-        setButtonHidden(true)
-        setAvatarVisible(false)
         setTitleRaised(true)
         setShowPrototypes(true)
+        setButtonHidden(true)
+        setPage('menu')
       }
     } catch {
     }
@@ -183,13 +182,8 @@ function App() {
   })
 
   createEffect(() => {
-    if (page() !== 'video') return
+    if (!videoOverlayOpen()) return
     if (!videoEl) return
-
-    try {
-      videoEl.currentTime = 0
-    } catch {
-    }
 
     const p = videoEl.play()
     if (p && typeof (p as Promise<void>).catch === 'function') {
@@ -256,6 +250,7 @@ function App() {
       setAvatarVisible(false)
       setTitleRaised(true)
       setShowPrototypes(true)
+      setPage('menu')
 
       followUpSpeechTimeoutId = window.setTimeout(() => {
         playAudio(instructionAudio)
@@ -276,30 +271,27 @@ function App() {
     setButtonHidden(false)
     setStartLocked(false)
     setPage('landing')
+    setFigmaLoading(false)
     if (window.location.hash) {
       window.history.pushState({}, '', window.location.pathname + window.location.search)
     }
   }
 
   const handleOpenVideo = () => {
-    try {
-      sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
-      sessionStorage.setItem(STORAGE_LANG_KEY, lang())
-    } catch {
+    setVideoOverlayOpen(true)
+    setVideoMuted(false)
+    if (videoEl) {
+      videoEl.muted = false
+      const p = videoEl.play()
+      if (p && typeof (p as Promise<void>).catch === 'function') {
+        ;(p as Promise<void>).catch(() => {})
+      }
     }
-
-    setButtonHidden(true)
-    setAvatarVisible(false)
-    setTitleRaised(true)
-    setShowPrototypes(true)
-    setPage('video')
-    window.history.pushState({ page: 'video' }, '', '#video')
   }
 
   const handleOpenFigma = () => {
     try {
       sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
-      sessionStorage.setItem(STORAGE_LANG_KEY, lang())
     } catch {
     }
 
@@ -307,14 +299,27 @@ function App() {
     setAvatarVisible(false)
     setTitleRaised(true)
     setShowPrototypes(true)
+    setFigmaLoading(true)
+    setFigmaLoadingToken(Date.now())
     setPage('figma')
     window.history.pushState({ page: 'figma' }, '', '#figma')
   }
 
   const handleBackToMenu = () => {
     setPage('menu')
-    if (window.location.hash === '#video' || window.location.hash === '#figma') {
-      window.history.back()
+    setFigmaLoading(false)
+    if (window.location.hash === '#figma') {
+      window.history.replaceState({}, '', window.location.pathname + window.location.search)
+    }
+  }
+
+  const handleCloseVideoOverlay = () => {
+    setVideoOverlayOpen(false)
+    setVideoMuted(true)
+    if (videoEl) {
+      videoEl.pause()
+      videoEl.currentTime = 0
+      videoEl.muted = true
     }
   }
 
@@ -333,44 +338,35 @@ function App() {
       <div class="landing__overlay" classList={{ 'landing__overlay--stage2': showPrototypes() }} />
       <div class="landing__content">
         <Show
-          when={page() !== 'video' && page() !== 'figma'}
+          when={page() !== 'figma'}
           fallback={
-            <Show
-              when={page() === 'video'}
-              fallback={
-                <div class="figma-page" aria-label="Prototype">
-                  <iframe
-                    class="figma-page__frame"
-                    src={FIGMA_EMBED_URL}
-                    allowfullscreen
-                    loading="eager"
-                    referrerpolicy="no-referrer"
-                    title="Prototype"
-                  />
-                  <button class="video-page__close" type="button" onClick={handleBackToMenu} aria-label="Close">
-                    <span class="video-page__close-icon">×</span>
-                  </button>
+            <div class="figma-page" aria-label="Prototype">
+              <iframe
+                class="figma-page__frame"
+                src={FIGMA_EMBED_URL}
+                allowfullscreen
+                loading="eager"
+                referrerpolicy="no-referrer"
+                title="Prototype"
+                onLoad={() => {
+                  const token = figmaLoadingToken()
+                  const elapsed = Date.now() - token
+                  const minMs = 900
+                  const remaining = Math.max(0, minMs - elapsed) + 450
+                  window.setTimeout(() => {
+                    setFigmaLoading(false)
+                  }, remaining)
+                }}
+              />
+              <Show when={figmaLoading()}>
+                <div class="figma-page__loader" aria-label="Loading">
+                  <div class="figma-page__spinner" aria-hidden="true" />
                 </div>
-              }
-            >
-              <div class="video-page" aria-label="Concept video">
-                <video
-                  class="video-page__video"
-                  src={VIDEO_URL}
-                  ref={(el) => {
-                    videoEl = el
-                  }}
-                  autoplay
-                  muted
-                  controls
-                  playsinline
-                  preload="auto"
-                />
-                <button class="video-page__close" type="button" onClick={handleBackToMenu} aria-label="Close">
-                  <span class="video-page__close-icon">×</span>
-                </button>
-              </div>
-            </Show>
+              </Show>
+              <button class="video-page__close" type="button" onClick={handleBackToMenu} aria-label="Close">
+                <span class="video-page__close-icon">×</span>
+              </button>
+            </div>
           }
         >
           <img
@@ -384,46 +380,22 @@ function App() {
             style={{ '--title-shift': `${titleShiftPx()}px` }}
           />
           <button
-            class="landing__cta"
-            classList={{ 'landing__cta--hidden': buttonHidden(), 'landing__cta--gone': showPrototypes() }}
+            class="landing__start"
+            classList={{ 'landing__start--hidden': buttonHidden() }}
             type="button"
             onClick={handleStart}
             disabled={startLocked()}
           >
-            {t('Starta', 'Start')}
+            Starta
           </button>
-
-          <div
-            class="landing__lang"
-            classList={{ 'landing__lang--hidden': buttonHidden() || showPrototypes() }}
-            aria-label="Language"
-            style={{ display: showPrototypes() ? 'none' : 'flex' }}
-          >
-            <button
-              type="button"
-              class="landing__lang-option"
-              classList={{ 'landing__lang-option--active': lang() === 'sv' }}
-              onClick={() => setLang('sv')}
-            >
-              Svenska
-            </button>
-            <button
-              type="button"
-              class="landing__lang-option"
-              classList={{ 'landing__lang-option--active': lang() === 'en' }}
-              onClick={() => setLang('en')}
-            >
-              English
-            </button>
-          </div>
 
           <button
             class="landing__back"
-            classList={{ 'landing__back--shown': showPrototypes() }}
+            classList={{ 'landing__back--shown': showPrototypes() && page() === 'menu' }}
             type="button"
             onClick={handleBackToLanding}
           >
-            {t('Tillbaka', 'Back')}
+            Tillbaka
           </button>
 
           <div
@@ -431,7 +403,7 @@ function App() {
             classList={{ 'prototype-cards--shown': showPrototypes() }}
             aria-label="Prototype list"
           >
-            {prototypes().slice(0, 2).map((prototype, i) => (
+            {prototypes().slice(0, 3).map((prototype, i) => (
               <button
                 class="prototype-card"
                 classList={{ 'prototype-card--active': selectedPrototypeIndex() === i }}
@@ -455,7 +427,6 @@ function App() {
                   if (prototype.href) {
                     try {
                       sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
-                      sessionStorage.setItem(STORAGE_LANG_KEY, lang())
                     } catch {
                     }
                     window.setTimeout(() => {
@@ -490,7 +461,7 @@ function App() {
           }}
         >
           <div class="avatar__bubble-text">
-            {t('Hej och välkommen till AccessCity Göteborg!', 'Hello and welcome to AccessCity Gothenburg!')}
+            Hej och välkommen till AccessCity Göteborg!
           </div>
         </div>
         <Show when={avatarVisible()}>
@@ -502,6 +473,56 @@ function App() {
             alt="Sue"
           />
         </Show>
+      </div>
+
+      <div class="video-overlay" classList={{ 'video-overlay--open': videoOverlayOpen() }} aria-label="Concept video">
+        <div class="video-overlay__backdrop" onClick={handleCloseVideoOverlay} />
+        <div class="video-overlay__content">
+          <video
+            class="video-overlay__video"
+            src={VIDEO_URL}
+            ref={(el) => {
+              videoEl = el
+            }}
+            autoplay
+            muted={videoMuted()}
+            controls
+            playsinline
+            preload="auto"
+            onClick={() => {
+              if (!videoEl) return
+              if (!videoMuted()) return
+              setVideoMuted(false)
+              videoEl.muted = false
+              const p = videoEl.play()
+              if (p && typeof (p as Promise<void>).catch === 'function') {
+                ;(p as Promise<void>).catch(() => {})
+              }
+            }}
+          />
+
+          <button class="video-page__close" type="button" onClick={handleCloseVideoOverlay} aria-label="Close">
+            <span class="video-page__close-icon">×</span>
+          </button>
+
+          <Show when={videoMuted()}>
+            <button
+              class="video-page__unmute"
+              type="button"
+              onClick={() => {
+                if (!videoEl) return
+                setVideoMuted(false)
+                videoEl.muted = false
+                const p = videoEl.play()
+                if (p && typeof (p as Promise<void>).catch === 'function') {
+                  ;(p as Promise<void>).catch(() => {})
+                }
+              }}
+            >
+              Slå på ljud
+            </button>
+          </Show>
+        </div>
       </div>
     </main>
   )
