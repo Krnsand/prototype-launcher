@@ -1,7 +1,11 @@
 import './App.css'
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import accessCityTitle from './assets/accesscity.png'
-import sueAvatar from './assets/sue.webp'
+import sueAvatar128 from './assets/sue/Comp_128.webp'
+import sueAvatar256 from './assets/sue/Comp_256.webp'
+import sueAvatar384 from './assets/sue/Comp_384.webp'
+import sueAvatar512 from './assets/sue/Comp_512.webp'
+import sueAvatar1080 from './assets/sue/Comp_1080.webp'
 import greetingMp3 from './assets/hej.mp3'
 import instructionMp3 from './assets/instruktion.mp3'
 import conceptIcon from './assets/concept.png'
@@ -19,41 +23,65 @@ function App() {
   const [startLocked, setStartLocked] = createSignal(false)
   const [selectedPrototypeIndex, setSelectedPrototypeIndex] = createSignal<number | null>(null)
 
+  const [lang, setLang] = createSignal<'sv' | 'en'>('sv')
+
+  const STORAGE_STAGE_KEY = 'accesscity:stage'
+  const STORAGE_LANG_KEY = 'accesscity:lang'
+
   const [titleShiftPx, setTitleShiftPx] = createSignal(0)
 
   let titleEl: HTMLImageElement | undefined
   let bubbleEl: HTMLDivElement | undefined
+  let titleBumperObserver: ResizeObserver | undefined
 
   const bubbleDelayMs = 1500
 
   const greetingAudio = new Audio(greetingMp3)
   greetingAudio.preload = 'auto'
+    // ta bort under för att kicka igång ljud igen
+  greetingAudio.muted = true
+  greetingAudio.volume = 0
 
   const instructionAudio = new Audio(instructionMp3)
   instructionAudio.preload = 'auto'
+    // ta bort under för att kicka igång ljud igen
+  instructionAudio.muted = true
+  instructionAudio.volume = 0
 
-  const prototypes: Array<{
+  const t = (sv: string, en: string) => (lang() === 'sv' ? sv : en)
+
+  const prototypes = (): Array<{
     title: string
     description: string
     icon: string
     href?: string
     disabled?: boolean
-  }> = [
+  }> => [
     {
-      title: 'Om',
-      description: 'En kort video om konceptet',
+      title: t('Om', 'About'),
+      description: t('En kort video om konceptet', 'A short video about the concept'),
       icon: conceptIcon,
       href: 'https://proxy.kokokaka.com/accesscity.mp4',
     },
     {
-      title: 'Prova',
-      description: 'Utvärdera prototypen för vidare förbättringar',
+      title: t('Prova', 'Try'),
+      description: t('Utvärdera prototypen för vidare förbättringar', 'Evaluate the prototype for further improvements'),
       icon: sensorMapIcon,
       href:
         'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=28-338&t=TE0wDr5AlTbZJx33-1&scaling=contain&content-scaling=fixed&page-id=26%3A4058&starting-point-node-id=28%3A338&hide-ui=1',
     },
-    { title: 'Arenakarta', description: 'Hitta rätt i arenan', icon: scandinaviumMapIcon, disabled: true },
-    { title: 'Aviseringar', description: 'Få aviseringar och notiser', icon: sensoryAlertsIcon, disabled: true },
+    {
+      title: t('Arenakarta', 'Arena map'),
+      description: t('Hitta rätt i arenan', 'Find your way in the arena'),
+      icon: scandinaviumMapIcon,
+      disabled: true,
+    },
+    {
+      title: t('Aviseringar', 'Alerts'),
+      description: t('Få aviseringar och notiser', 'Receive alerts and notifications'),
+      icon: sensoryAlertsIcon,
+      disabled: true,
+    },
   ]
 
   let postStartTimeoutId: number | undefined
@@ -72,20 +100,24 @@ function App() {
       return
     }
 
-    if (!avatarVisible()) {
-      setTitleShiftPx(0)
-      return
-    }
-
-    const titleRect = titleEl.getBoundingClientRect()
-    const bubbleRect = bubbleEl.getBoundingClientRect()
-
-    const desiredGap = 8
-    const overlap = titleRect.bottom + desiredGap - bubbleRect.top
-    setTitleShiftPx(overlap > 0 ? Math.ceil(overlap) : 0)
+    setTitleShiftPx(0)
   }
 
   onMount(() => {
+    try {
+      const storedLang = sessionStorage.getItem(STORAGE_LANG_KEY)
+      if (storedLang === 'sv' || storedLang === 'en') setLang(storedLang)
+
+      const storedStage = sessionStorage.getItem(STORAGE_STAGE_KEY)
+      if (storedStage === 'menu') {
+        setButtonHidden(true)
+        setAvatarVisible(false)
+        setTitleRaised(true)
+        setShowPrototypes(true)
+      }
+    } catch {
+    }
+
     const onResize = () => {
       requestAnimationFrame(updateTitleShift)
     }
@@ -105,6 +137,31 @@ function App() {
     titleRaised()
     showPrototypes()
     requestAnimationFrame(updateTitleShift)
+  })
+
+  createEffect(() => {
+    if (!avatarVisible() || !titleEl || !bubbleEl) {
+      titleBumperObserver?.disconnect()
+      titleBumperObserver = undefined
+      return
+    }
+
+    if (!titleBumperObserver) {
+      titleBumperObserver = new ResizeObserver(() => {
+        requestAnimationFrame(updateTitleShift)
+      })
+    }
+
+    titleBumperObserver.disconnect()
+    titleBumperObserver.observe(titleEl)
+    titleBumperObserver.observe(bubbleEl)
+
+    requestAnimationFrame(updateTitleShift)
+
+    onCleanup(() => {
+      titleBumperObserver?.disconnect()
+      titleBumperObserver = undefined
+    })
   })
 
   const playAudio = (audio: HTMLAudioElement) => {
@@ -164,7 +221,7 @@ function App() {
       <div class="landing__content">
         <img
           class="landing__title"
-          classList={{ 'landing__title--raised': titleRaised() }}
+          classList={{ 'landing__title--raised': titleRaised(), 'landing__title--cards': showPrototypes() }}
           src={accessCityTitle}
           alt="AccessCity"
           ref={(el) => {
@@ -179,40 +236,69 @@ function App() {
           onClick={handleStart}
           disabled={startLocked()}
         >
-          Starta
+          {t('Starta', 'Start')}
         </button>
+
+        <div
+          class="landing__lang"
+          classList={{ 'landing__lang--hidden': buttonHidden() || showPrototypes() }}
+          aria-label="Language"
+          style={{ display: showPrototypes() ? 'none' : 'flex' }}
+        >
+          <button
+            type="button"
+            class="landing__lang-option"
+            classList={{ 'landing__lang-option--active': lang() === 'sv' }}
+            onClick={() => setLang('sv')}
+          >
+            Svenska
+          </button>
+          <button
+            type="button"
+            class="landing__lang-option"
+            classList={{ 'landing__lang-option--active': lang() === 'en' }}
+            onClick={() => setLang('en')}
+          >
+            English
+          </button>
+        </div>
 
         <div
           class="prototype-cards"
           classList={{ 'prototype-cards--shown': showPrototypes() }}
           aria-label="Prototype list"
         >
-          {prototypes.map((prototype, i) => (
-            <button
-              class="prototype-card"
-              classList={{ 'prototype-card--active': selectedPrototypeIndex() === i }}
-              style={{ '--i': i, '--delay': `${i * 400}ms` }}
-              type="button"
-              disabled={prototype.disabled}
-              onClick={() => {
-                if (prototype.disabled) return
-                setSelectedPrototypeIndex(i)
-                if (prototype.href) {
-                  window.setTimeout(() => {
-                    window.open(prototype.href!, '_blank', 'noopener,noreferrer')
-                  }, 80)
+        {prototypes().slice(0, 2).map((prototype, i) => (
+          <button
+            class="prototype-card"
+            classList={{ 'prototype-card--active': selectedPrototypeIndex() === i }}
+            style={{ '--i': i, '--delay': `${i * 400}ms` }}
+            type="button"
+            disabled={prototype.disabled}
+            onClick={() => {
+              if (prototype.disabled) return
+              setSelectedPrototypeIndex(i)
+              if (prototype.href) {
+                try {
+                  sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
+                  sessionStorage.setItem(STORAGE_LANG_KEY, lang())
+                } catch {
                 }
-              }}
-            >
-              <div class="prototype-card__icon" aria-hidden="true">
-                <img src={prototype.icon} alt="" />
-              </div>
-              <div class="prototype-card__text">
-                <div class="prototype-card__title">{prototype.title}</div>
-                <div class="prototype-card__description">{prototype.description}</div>
-              </div>
-            </button>
-          ))}
+                window.setTimeout(() => {
+                  window.open(prototype.href!, '_blank', 'noopener,noreferrer')
+                }, 80)
+              }
+            }}
+          >
+            <div class="prototype-card__icon" aria-hidden="true">
+              <img src={prototype.icon} alt="" />
+            </div>
+            <div class="prototype-card__text">
+              <div class="prototype-card__title">{prototype.title}</div>
+              <div class="prototype-card__description">{prototype.description}</div>
+            </div>
+          </button>
+        ))}
         </div>
       </div>
 
@@ -228,9 +314,17 @@ function App() {
             bubbleEl = el
           }}
         >
-          <div class="avatar__bubble-text">Hej och välkommen till AccessCity Göteborg!</div>
+          <div class="avatar__bubble-text">
+            {t('Hej och välkommen till AccessCity Göteborg!', 'Hello and welcome to AccessCity Gothenburg!')}
+          </div>
         </div>
-        <img class="avatar__image" src={sueAvatar} alt="Sue" />
+        <img
+          class="avatar__image"
+          src={sueAvatar512}
+          srcset={`${sueAvatar128} 128w, ${sueAvatar256} 256w, ${sueAvatar384} 384w, ${sueAvatar512} 512w, ${sueAvatar1080} 1080w`}
+          sizes="(max-width: 380px) 128px, (max-width: 520px) 256px, (max-width: 768px) 384px, 512px"
+          alt="Sue"
+        />
       </div>
     </main>
   )
