@@ -281,6 +281,12 @@ function App() {
     setVideoOverlayOpen(true)
     setVideoMuted(false)
     if (videoEl) {
+      videoEl.pause()
+      try {
+        videoEl.currentTime = 0
+      } catch {
+      }
+      videoEl.load()
       videoEl.muted = false
       const p = videoEl.play()
       if (p && typeof (p as Promise<void>).catch === 'function') {
