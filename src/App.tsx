@@ -1,11 +1,7 @@
 import './App.css'
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import accessCityTitle from './assets/accesscity.png'
-import sueAvatar128 from './assets/sue/Comp_128.webp'
-import sueAvatar256 from './assets/sue/Comp_256.webp'
-import sueAvatar384 from './assets/sue/Comp_384.webp'
 import sueAvatar512 from './assets/sue/Comp_512.webp'
-import sueAvatar1080 from './assets/sue/Comp_1080.webp'
 import greetingMp3 from './assets/hej.mp3'
 import instructionMp3 from './assets/instruktion.mp3'
 import conceptIcon from './assets/concept.png'
@@ -205,6 +201,20 @@ function App() {
     }, 5000)
   }
 
+  const handleBackToLanding = () => {
+    try {
+      sessionStorage.removeItem(STORAGE_STAGE_KEY)
+    } catch {
+    }
+
+    setSelectedPrototypeIndex(null)
+    setShowPrototypes(false)
+    setTitleRaised(false)
+    setAvatarVisible(false)
+    setButtonHidden(false)
+    setStartLocked(false)
+  }
+
   onCleanup(() => {
     if (postStartTimeoutId !== undefined) window.clearTimeout(postStartTimeoutId)
     if (followUpSpeechTimeoutId !== undefined) window.clearTimeout(followUpSpeechTimeoutId)
@@ -263,6 +273,15 @@ function App() {
           </button>
         </div>
 
+        <button
+          class="landing__back"
+          classList={{ 'landing__back--shown': showPrototypes() }}
+          type="button"
+          onClick={handleBackToLanding}
+        >
+          {t('Tillbaka', 'Back')}
+        </button>
+
         <div
           class="prototype-cards"
           classList={{ 'prototype-cards--shown': showPrototypes() }}
@@ -285,7 +304,7 @@ function App() {
                 } catch {
                 }
                 window.setTimeout(() => {
-                  window.open(prototype.href!, '_blank', 'noopener,noreferrer')
+                  window.location.assign(prototype.href!)
                 }, 80)
               }
             }}
@@ -318,13 +337,15 @@ function App() {
             {t('Hej och välkommen till AccessCity Göteborg!', 'Hello and welcome to AccessCity Gothenburg!')}
           </div>
         </div>
-        <img
-          class="avatar__image"
-          src={sueAvatar512}
-          srcset={`${sueAvatar128} 128w, ${sueAvatar256} 256w, ${sueAvatar384} 384w, ${sueAvatar512} 512w, ${sueAvatar1080} 1080w`}
-          sizes="(max-width: 380px) 128px, (max-width: 520px) 256px, (max-width: 768px) 384px, 512px"
-          alt="Sue"
-        />
+        <Show when={avatarVisible()}>
+          <img
+            class="avatar__image"
+            src={sueAvatar512}
+            srcset={`${sueAvatar512} 512w`}
+            sizes="512px"
+            alt="Sue"
+          />
+        </Show>
       </div>
     </main>
   )
