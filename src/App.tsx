@@ -4,10 +4,11 @@ import accessCityTitle from './assets/accesscity.png'
 import sueAvatar512 from './assets/sue/Comp_512.webp'
 import greetingMp3 from './assets/hej.mp3'
 import instructionMp3 from './assets/instruktion.mp3'
-import conceptIcon from './assets/concept.png'
-import sensorMapIcon from './assets/sensor_map.png'
 import scandinaviumMapIcon from './assets/scandinavium_map.png'
 import sensoryAlertsIcon from './assets/sensory_alerts.png'
+import aboutVideo from './assets/about.png'
+import prototypeSv from './assets/prova.png'
+import prototypeEng from './assets/try-it.png'
 
 // type PrototypeIcon = string
 
@@ -73,21 +74,21 @@ function App() {
     {
       title: 'Om',
       description: 'En kort video om konceptet',
-      icon: conceptIcon,
+      icon: aboutVideo,
       href: VIDEO_URL,
       type: 'video',
     },
     {
       title: 'Prova',
       description: 'Utvärdera prototypen för vidare förbättringar',
-      icon: sensorMapIcon,
+      icon: prototypeSv,
       href: FIGMA_PROTO_URL_SV,
       type: 'figma',
     },
     {
       title: 'Try it',
       description: 'Evaluate the prototype for further improvements',
-      icon: sensorMapIcon,
+      icon: prototypeEng,
       href: FIGMA_PROTO_URL_EN,
       type: 'figma',
     },
