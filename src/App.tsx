@@ -1,6 +1,6 @@
 import './App.css'
 import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
-import accessCityTitle from './assets/accesscity.png'
+import logoTitle from './assets/logo.png'
 import sueAvatar512 from './assets/sue/Comp_512.webp'
 import greetingMp3 from './assets/hej.mp3'
 import instructionMp3 from './assets/instruktion.mp3'
@@ -386,7 +386,7 @@ function App() {
           <img
             class="landing__title"
             classList={{ 'landing__title--raised': titleRaised(), 'landing__title--cards': showPrototypes() }}
-            src={accessCityTitle}
+            src={logoTitle}
             alt="AccessCity"
             ref={(el) => {
               titleEl = el
