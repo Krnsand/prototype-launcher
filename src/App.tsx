@@ -31,9 +31,15 @@ function App() {
   const STORAGE_STAGE_KEY = 'accesscity:stage'
 
   const VIDEO_URL = 'https://proxy.kokokaka.com/accesscity.mp4'
-  const FIGMA_PROTO_URL =
+  const FIGMA_PROTO_URL_SV =
+    'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=669-2593&t=DW6qBUszqGpGIocE-1&scaling=contain&content-scaling=fixed&page-id=669%3A2570&starting-point-node-id=669%3A2593&hide-ui=1'
+  const FIGMA_PROTO_URL_EN =
     'https://www.figma.com/proto/fSyMubGaRLLj7Toka8d4X3/Access-city_Prototype_Jan-Feb-2026?node-id=28-338&t=TE0wDr5AlTbZJx33-1&scaling=contain&content-scaling=fixed&page-id=26%3A4058&starting-point-node-id=28%3A338&hide-ui=1'
-  const FIGMA_EMBED_URL = `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(FIGMA_PROTO_URL)}`
+
+  const figmaEmbedFromProtoUrl = (protoUrl: string) =>
+    `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(protoUrl)}`
+
+  const [figmaEmbedUrl, setFigmaEmbedUrl] = createSignal(figmaEmbedFromProtoUrl(FIGMA_PROTO_URL_SV))
 
   const [titleShiftPx, setTitleShiftPx] = createSignal(0)
 
@@ -75,14 +81,14 @@ function App() {
       title: 'Prova',
       description: 'Utvärdera prototypen för vidare förbättringar',
       icon: sensorMapIcon,
-      href: FIGMA_EMBED_URL,
+      href: FIGMA_PROTO_URL_SV,
       type: 'figma',
     },
     {
       title: 'Try it',
       description: 'Evaluate the prototype for further improvements',
       icon: sensorMapIcon,
-      href: FIGMA_EMBED_URL,
+      href: FIGMA_PROTO_URL_EN,
       type: 'figma',
     },
     {
@@ -295,7 +301,7 @@ function App() {
     }
   }
 
-  const handleOpenFigma = () => {
+  const handleOpenFigma = (protoUrl?: string) => {
     try {
       sessionStorage.setItem(STORAGE_STAGE_KEY, 'menu')
     } catch {
@@ -307,6 +313,7 @@ function App() {
     setShowPrototypes(true)
     setFigmaLoading(true)
     setFigmaLoadingToken(Date.now())
+    if (protoUrl) setFigmaEmbedUrl(figmaEmbedFromProtoUrl(protoUrl))
     setPage('figma')
     window.history.pushState({ page: 'figma' }, '', '#figma')
   }
@@ -349,7 +356,7 @@ function App() {
             <div class="figma-page" aria-label="Prototype">
               <iframe
                 class="figma-page__frame"
-                src={FIGMA_EMBED_URL}
+                src={figmaEmbedUrl()}
                 allowfullscreen
                 loading="eager"
                 referrerpolicy="no-referrer"
@@ -426,7 +433,7 @@ function App() {
                   }
 
                   if (prototype.type === 'figma') {
-                    handleOpenFigma()
+                    handleOpenFigma(prototype.href)
                     return
                   }
 
