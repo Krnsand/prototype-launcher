@@ -54,14 +54,14 @@ function App() {
   const greetingAudio = new Audio(greetingMp3)
   greetingAudio.preload = 'auto'
     // ta bort under för att kicka igång ljud igen
-  // greetingAudio.muted = true
-  // greetingAudio.volume = 0
+ greetingAudio.muted = true
+ greetingAudio.volume = 0
 
   const instructionAudio = new Audio(instructionMp3)
   instructionAudio.preload = 'auto'
     // ta bort under för att kicka igång ljud igen
-  // instructionAudio.muted = true
-  // instructionAudio.volume = 0
+ instructionAudio.muted = true
+ instructionAudio.volume = 0
 
   const prototypes = (): Array<{
     title: string
@@ -395,21 +395,12 @@ function App() {
           />
           <button
             class="landing__start"
-            classList={{ 'landing__start--hidden': buttonHidden() }}
+            classList={{ 'landing__start--hidden': buttonHidden(), 'landing__start--gone': showPrototypes() }}
             type="button"
             onClick={handleStart}
             disabled={startLocked()}
           >
             Starta
-          </button>
-
-          <button
-            class="landing__back"
-            classList={{ 'landing__back--shown': showPrototypes() && page() === 'menu' }}
-            type="button"
-            onClick={handleBackToLanding}
-          >
-            Tillbaka
           </button>
 
           <div
@@ -459,6 +450,15 @@ function App() {
               </button>
             ))}
           </div>
+
+          <button
+            class="landing__back"
+            classList={{ 'landing__back--shown': showPrototypes() && page() === 'menu' }}
+            type="button"
+            onClick={handleBackToLanding}
+          >
+            Tillbaka
+          </button>
         </Show>
       </div>
 
