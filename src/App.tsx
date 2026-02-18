@@ -54,14 +54,14 @@ function App() {
   const greetingAudio = new Audio(greetingMp3)
   greetingAudio.preload = 'auto'
     // ta bort under för att kicka igång ljud igen
- greetingAudio.muted = true
- greetingAudio.volume = 0
+ //greetingAudio.muted = true
+ //greetingAudio.volume = 0
 
   const instructionAudio = new Audio(instructionMp3)
   instructionAudio.preload = 'auto'
     // ta bort under för att kicka igång ljud igen
- instructionAudio.muted = true
- instructionAudio.volume = 0
+ //instructionAudio.muted = true
+ //instructionAudio.volume = 0
 
   const prototypes = (): Array<{
     title: string
